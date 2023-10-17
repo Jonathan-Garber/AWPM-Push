@@ -1,0 +1,23 @@
+{
+    "theme_color": "#f5a623",
+    "background_color": "#000000",
+    "display": "fullscreen",
+    "scope": "/wp-admin/",
+    "start_url": "/wp-admin/",
+    "name": "Archipelago Admin",
+    "short_name": "AWP",
+    "description": "Archipelago Wordpress Admin Panel",
+    "icons": [
+        {
+            "src": "/wp-content/plugins/archipelago-wp/src/Modules/Push/Backend/Assets/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/wp-content/plugins/archipelago-wp/src/Modules/Push/Backend/Assets/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
