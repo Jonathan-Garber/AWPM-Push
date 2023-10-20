@@ -67,15 +67,23 @@ class PushManager extends Base
     public static function updateSubscription($user_id, $type, $request)
     {
         $body = $request->get_json_params();
+        $endpoint = $body['endpoint'];
+        $p_key = $body['keys']['p256dh'];
+        $auth_key = $body['keys']['auth'];
+
         $record = [
-            'user_id'   => $user_id,
-            'type'      => $type,
-            'endpoint'  => $body['endpoint'],
-            'p_key'     => $body['keys']['p256dh'],
-            'auth_key'  => $body['keys']['auth']
+            'user_id'   => "'$user_id'",
+            'type'      => "'$type'",
+            'endpoint'  => "'$endpoint'",
+            'p_key'     => "'$p_key'",
+            'auth_key'  => "'$auth_key'"
         ];
+        $record = implode(', ', $record);
         global $wpdb;
-        $wpdb->insert("{$wpdb->prefix}push_subscriptions", $record);
+        $wpdb->query($wpdb->prepare("INSERT INTO {$wpdb->prefix}push_subscriptions (user_id, type, endpoint, p_key, auth_key)
+                    VALUES ($record)
+                    ON DUPLICATE KEY UPDATE p_key=%s, auth_key=%s
+                    ", $body['keys']['p256dh'], $body['keys']['auth']));
         if ($wpdb->insert_id) return true;
         return false;
     }

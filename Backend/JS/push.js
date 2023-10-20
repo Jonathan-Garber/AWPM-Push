@@ -1,12 +1,35 @@
 jQuery(function ($) {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker', { 'scope': '/wp-admin/' })
+  const userId = $('#push-manager').data('userid')
+  const type = $('#push-manager').data('type')
+  if (!userId || !type) return
+
   checkSubscription()
 
-  $('.push-button').click(function () {
-    const userId = $(this).data('userid')
-    const action = $(this).data('action')
-    const type = $(this).data('type')
-    subscriptions(userId, action, type)
+  async function checkSubscription() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.ready.then((serviceWorker) => {
+      serviceWorker.pushManager.getSubscription().then((subscription) => {
+        jQuery('#ios_install_first').hide();
+        if (subscription) {
+          storeSubscription(userId, type, subscription)
+          jQuery('#push-manager').val('unsubscribe')
+          jQuery('#push-manager').text('Unsubscribe')
+        } else {
+          jQuery('#push-manager').val('subscribe')
+        }
+      })
+    }).catch((error) => {
+      jQuery('#push-manager').attr('disabled', true);
+      jQuery('#ios_install_first').show();
+    })
+  }
+
+
+  $('#push-manager').click(async function () {
+    const action = $(this).val()
+    await subscriptions(action, userId, type)
+    location.reload()
   })
 
   function bell() {
@@ -19,28 +42,8 @@ jQuery(function ($) {
 const publicVapidKey = 'BEMkFJZUGpY79uafMKB1hwWQqThQwTB05p0tL9JfFpp6AR-8YnsMfo5KoWPtV2LHZdOYm7bIVcByzzygYdyqkzY'
 const applicationServerKey = urlBase64ToUint8Array(publicVapidKey)
 
-async function checkSubscription() {
-  if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.ready.then((serviceWorker) => {
-    serviceWorker.pushManager.getSubscription().then((subscription) => {
-      jQuery('#ios_install_first').hide();
-      if (subscription) {
-        jQuery('.push-button').data('action', 'unsubscribe')
-        jQuery('.push-text').text('Unsubscribe')
-        jQuery('.push-icon').toggleClass('fa-bell-slash fa-bell')
-      } else {
-        jQuery('.push-button').data('action', 'subscribe')
-        jQuery('.push-text').text('Subscribe')
-        jQuery('.push-icon').toggleClass('fa-bell fa-bell-slash')
-      }
-    })
-  }).catch((error) => {
-    jQuery('.push-button').attr('disabled', true);
-    jQuery('#ios_install_first').show();
-  })
-}
 
-async function subscriptions(userId, action, type) {
+async function subscriptions(action, userId, type) {
   if (!('serviceWorker' in navigator)) return;
   if (window.Notification.permission === 'default') await window.Notification.requestPermission();
   if (Notification.permission === 'granted') {
@@ -74,9 +77,8 @@ async function storeSubscription(userId, type, subscription) {
       'content-type': 'application/json',
     },
   }).then(() => {
-    jQuery('.push-button').data('action', 'unsubscribe')
-    jQuery('.push-text').text('Unsubscribe')
-    jQuery('.push-icon').toggleClass('fa-bell fa-bell-slash')
+    jQuery('#push-manager').val('unsubscribe')
+    jQuery('#push-manager').text('Unsubscribe')
   }).catch(error => {
     alert(error)
   });
@@ -90,9 +92,8 @@ async function removeSubscription(subscription) {
       'content-type': 'application/json',
     },
   }).then(() => {
-    jQuery('.push-button').data('action', 'subscribe')
-    jQuery('.push-text').text('Subscribe')
-    jQuery('.push-icon').toggleClass('fa-bell-slash fa-bell')
+    jQuery('#push-manager').val('subscribe')
+    jQuery('#push-manager').text('Subscribe')
   }).catch((error) => {
     alert(error)
   })
