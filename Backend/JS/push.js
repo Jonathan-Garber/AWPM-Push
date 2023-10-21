@@ -38,10 +38,7 @@ jQuery(function ($) {
   }
 })
 
-// QEbnnmk6dm5HMdcEU_EJ-wL_OwBN5zevlF8KzbUrQ4I
-const publicVapidKey = 'BEMkFJZUGpY79uafMKB1hwWQqThQwTB05p0tL9JfFpp6AR-8YnsMfo5KoWPtV2LHZdOYm7bIVcByzzygYdyqkzY'
-const applicationServerKey = urlBase64ToUint8Array(publicVapidKey)
-
+const applicationServerKey = urlBase64ToUint8Array(PM.publicKey)
 
 async function subscriptions(action, userId, type) {
   if (!('serviceWorker' in navigator)) return;

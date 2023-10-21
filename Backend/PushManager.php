@@ -52,10 +52,16 @@ class PushManager extends Base
 
     public function pushResources()
     {
+        $public_key     = getenv('PUSH_VAPID_PUBLIC_KEY');
+        if (!$public_key) return;
+
         $plugin_dir     = plugin_dir_path(__DIR__);
         $plugin_url     = plugin_dir_url(__DIR__);
         $push_js        = 'Backend/JS/push.js';
         wp_enqueue_script('push-service', $plugin_url . $push_js, [], filemtime($plugin_dir . $push_js));
+        wp_add_inline_script('push-service', 'const PM = ' . json_encode([
+            'publicKey' => $public_key
+        ]), 'before');
     }
 
     public static function hasSubscription($user_id, $type, $endpoint)
@@ -98,6 +104,12 @@ class PushManager extends Base
 
     public static function pushNotice($type, $payload)
     {
+        //Get our keys from envar
+        $email          = getenv('PUSH_VAPID_EMAIL');
+        $public_key     = getenv('PUSH_VAPID_PUBLIC_KEY');
+        $private_key    = getenv('PUSH_VAPID_PRIVATE_KEY');
+        if (!$email || !$public_key || !$private_key) return;
+
         global $wpdb;
         $subscribers    = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}push_subscriptions WHERE type = '$type'");
         if (!$subscribers) return;
@@ -114,12 +126,12 @@ class PushManager extends Base
                 'payload' => json_encode($payload)
             ];
         }
-        //Needs moved to proper storage area some point publicKey privateKey email etc
+
         $auth = [
             'VAPID' => [
-                'subject' => 'mailto:jonathan@clublisi.com',
-                'publicKey' => "BEMkFJZUGpY79uafMKB1hwWQqThQwTB05p0tL9JfFpp6AR-8YnsMfo5KoWPtV2LHZdOYm7bIVcByzzygYdyqkzY",
-                'privateKey' => "QEbnnmk6dm5HMdcEU_EJ-wL_OwBN5zevlF8KzbUrQ4I"
+                'subject' => "mailto:$email",
+                'publicKey' => $public_key,
+                'privateKey' => $private_key
             ],
         ];
         $push = new WebPush($auth);
