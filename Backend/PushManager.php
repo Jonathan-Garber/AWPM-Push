@@ -35,6 +35,7 @@ class PushManager extends Base
     {
         add_action('admin_enqueue_scripts', [$this, 'pushResources'], 10);
         add_action('admin_head', [$this, 'pushManifestResources']);
+        add_action('admin_notices', [$this, 'missingConfigNotice']);
     }
 
     public function pushManifestResources()
@@ -52,15 +53,15 @@ class PushManager extends Base
 
     public function pushResources()
     {
-        $public_key     = getenv('PUSH_VAPID_PUBLIC_KEY');
-        if (!$public_key) return;
+        global $awpc;
+        if (empty($awpc['push']['vapid']['public_key'])) return;
 
         $plugin_dir     = plugin_dir_path(__DIR__);
         $plugin_url     = plugin_dir_url(__DIR__);
         $push_js        = 'Backend/JS/push.js';
         wp_enqueue_script('push-service', $plugin_url . $push_js, [], filemtime($plugin_dir . $push_js));
         wp_add_inline_script('push-service', 'const PM = ' . json_encode([
-            'publicKey' => $public_key
+            'publicKey' => $awpc['push']['vapid']['public_key']
         ]), 'before');
     }
 
@@ -104,11 +105,11 @@ class PushManager extends Base
 
     public static function pushNotice($type, $payload)
     {
-        //Get our keys from envar
-        $email          = getenv('PUSH_VAPID_EMAIL');
-        $public_key     = getenv('PUSH_VAPID_PUBLIC_KEY');
-        $private_key    = getenv('PUSH_VAPID_PRIVATE_KEY');
-        if (!$email || !$public_key || !$private_key) return;
+        global $awpc;
+        if (empty($awpc['push']['vapid']['email']) || empty($awpc['push']['vapid']['private_key']) || empty($awpc['push']['vapid']['public_key'])) return;
+        $email          = $awpc['push']['vapid']['email'];
+        $private_key    = $awpc['push']['vapid']['private_key'];
+        $public_key     = $awpc['push']['vapid']['public_key'];
 
         global $wpdb;
         $subscribers    = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}push_subscriptions WHERE type = '$type'");
@@ -150,5 +151,16 @@ class PushManager extends Base
                 error_log("[x] Message failed to send for subscription {$endpoint}: {$report->getReason()}");
             }
         }
+    }
+
+    public function missingConfigNotice()
+    {
+        global $awpc;
+        if (!empty($awpc['push'])) return;
+?>
+        <div class="notice notice-error is-dismissible">
+            <p><?php _e('<h1>Push Module</h1> Missing config, please resolve this in order to use the Push Notifications!', 'archipelago'); ?></p>
+        </div>
+<?php
     }
 }
