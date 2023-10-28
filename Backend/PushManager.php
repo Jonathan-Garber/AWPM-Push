@@ -155,7 +155,7 @@ class PushManager extends Base
 
     public function missingConfigNotice()
     {
-        global $awpc;
+        $awpc = archipelago()->loadConfig();
         if (!empty($awpc['push'])) return;
 ?>
         <div class="notice notice-error is-dismissible">
