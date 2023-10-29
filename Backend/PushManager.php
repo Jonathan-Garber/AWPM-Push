@@ -33,32 +33,19 @@ class PushManager extends Base
      */
     public function init()
     {
-        add_action('admin_enqueue_scripts', [$this, 'pushResources'], 10);
-        add_action('admin_head', [$this, 'pushManifestResources']);
+        add_action('admin_enqueue_scripts', [$this, 'loadResources'], 10);
         add_action('admin_notices', [$this, 'missingConfigNotice']);
     }
 
-    public function pushManifestResources()
+    public function loadResources()
     {
-        echo '<link rel="apple-touch-icon" sizes="180x180" href="/wp-content/plugins/archipelago-wp/src/Modules/Push/Backend/Assets/apple-touch-icon.jpg">
-        <link rel="icon" type="image/png" sizes="32x32" href="/wp-content/plugins/archipelago-wp/src/Modules/Push/Backend/Assets/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/wp-content/plugins/archipelago-wp/src/Modules/Push/Backend/Assets/favicon-16x16.png">
-        <link rel="mask-icon" href="/wp-content/plugins/archipelago-wp/src/Modules/Push/Backend/Assets/safari-pinned-tab.svg" color="#5bbad5">
-        <link rel="shortcut icon" href="/wp-content/plugins/archipelago-wp/src/Modules/Push/Backend/Assets/favicon.ico">
-        <meta name="msapplication-TileColor" content="#2d89ef">
-        <meta name="msapplication-config" content="/wp-content/plugins/archipelago-wp/src/Modules/Push/Backend/Assets/browserconfig.xml">
-        <meta name="theme-color" content="#ffffff">
-        <link rel="manifest" href="/webmanifest">';
-    }
-
-    public function pushResources()
-    {
-        global $awpc;
-        if (empty($awpc['push']['vapid']['public_key'])) return;
+        $awpc = archipelago()->loadConfig();
+        if (empty($awpc['push'])) return;
 
         $plugin_dir     = plugin_dir_path(__DIR__);
         $plugin_url     = plugin_dir_url(__DIR__);
-        $push_js        = 'Backend/JS/push.js';
+        $push_js        = 'Backend/JS/push-service.js';
+
         wp_enqueue_script('push-service', $plugin_url . $push_js, [], filemtime($plugin_dir . $push_js));
         wp_add_inline_script('push-service', 'const PM = ' . json_encode([
             'publicKey' => $awpc['push']['vapid']['public_key']
@@ -105,8 +92,9 @@ class PushManager extends Base
 
     public static function pushNotice($type, $payload)
     {
-        global $awpc;
+        $awpc = archipelago()->loadConfig();    
         if (empty($awpc['push']['vapid']['email']) || empty($awpc['push']['vapid']['private_key']) || empty($awpc['push']['vapid']['public_key'])) return;
+
         $email          = $awpc['push']['vapid']['email'];
         $private_key    = $awpc['push']['vapid']['private_key'];
         $public_key     = $awpc['push']['vapid']['public_key'];

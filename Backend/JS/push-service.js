@@ -1,5 +1,4 @@
 jQuery(function ($) {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker', { 'scope': '/wp-admin/' })
   const userId = $('#push-manager').data('userid')
   const type = $('#push-manager').data('type')
   if (!userId || !type) return
